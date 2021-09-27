@@ -7,8 +7,8 @@ class PostsService {
     return posts
   }
 
-  async getOne(id, userId) {
-    const post = await dbContext.Posts.findById(id, userId).populate('creator')
+  async getOne(id) {
+    const post = await dbContext.Posts.findById(id).populate('creator')
     if (!post) {
       throw new BadRequest('Invalid Id')
     }
@@ -20,22 +20,24 @@ class PostsService {
     return await dbContext.Posts.findById(post._id).populate('creator', 'name picture')
   }
 
-  async edit(body) {
-    const post = await dbContext.Posts.findByIdAndUpdate(body.id, body, { new: true, runValidators: true })
-    if (!post) {
-      throw new BadRequest('invalid Id')
-    }
-    return post
+  async edit(body, userId) {
+    if (body.creatorId === userId) {
+      const post = await dbContext.Posts.findByIdAndUpdate(body.id, body, { new: true, runValidators: true })
+      if (!post) {
+        throw new BadRequest('invalid Id')
+      }
+      return post
+    } else { throw new BadRequest('Not your Post!') }
   }
 
   async destroy(id, userId) {
-    const foundPost = await this.getOne(id, userId)
-    if (foundPost.creatorId === userId) {
+    const foundPost = await this.getOne(id)
+    if (foundPost.creatorId.toString() === userId) {
       const post = await dbContext.Posts.findByIdAndDelete(id)
       if (!post) {
         throw new BadRequest('invalid Id')
       } return post
-    }
+    } throw new BadRequest('Not your post!')
   }
 }
 
